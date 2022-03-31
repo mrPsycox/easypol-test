@@ -1,40 +1,37 @@
 import bcrypt from 'bcrypt';
 import UserModel from "../models/user"
-import jwt, { Jwt } from 'jsonwebtoken';
-import decoder from 'jwt-decode';
 import { randomBytes } from 'crypto';
+import JwtService from './jwt';
+import { JwtPayload } from 'jwt-decode';
 
 export default class AuthService {
     constructor(){}
 
 
-    private generateJWT(user: any){
-        return jwt.sign({
-            data: {
-                _id: user._id,
-                email: user.email,
+   public async create(email: String, password: String, role: String): Promise<any> {
+        try{
+
+            const salt = randomBytes(32);
+            const pwdHash = await bcrypt.hash(password.toString(), Number(salt));
+    
+            const userRecord = await UserModel.create({
+               email,
+               password: pwdHash,
+               salt: salt.toString('hex'),
+               role,
+            });
+    
+            return {
+                email: userRecord.email,
+                applied_role: userRecord.role,
             }
-        }, 'MySuP3R_z3kr3t.', { expiresIn: '6h' });
-    }
 
-
-    public async create(email: String, password: String, role: String): Promise<any> {
-        const salt = randomBytes(32);
-        const pwdHash = await bcrypt.hash(password.toString(), Number(salt));
-
-        const userRecord = await UserModel.create({
-           email,
-           password: pwdHash,
-           salt: salt.toString('hex'),
-           role,
-        });
-
-        console.log(userRecord.role)
-        return {
-            email: userRecord.email,
-            applied_role: userRecord.role,
+        }catch(err: any){
+            throw new Error(err.message);
         }
+ 
     }
+
 
     public async login(email: String, password: String): Promise<any> {
         
@@ -51,28 +48,42 @@ export default class AuthService {
             throw new Error('Incorrect password');
         }
 
-        if(userRecord.token){
-            try {
-                //future check of jwt token
-                const decoded = JSON.stringify(decoder(userRecord.token),null,4);
-            }catch(err){
-                throw new Error("Unable to decode token");
-            }
-        }
-        
-        const new_token = this.generateJWT(userRecord);
-        userRecord.token = new_token;
+        const jwtServiceInstance = new JwtService();
 
-        await userRecord.save();
+        if(!userRecord.token || userRecord.token == ""){
+            const new_token = jwtServiceInstance.generateJWT(userRecord);
+            userRecord.token = new_token;
 
-        return {
+            await userRecord.save();
+
+
+            return {
             email: userRecord.email,
-            token: new_token
-        }
+            token: new_token,
+            }
+
+        }else{
+
+            const token_decoded = jwtServiceInstance.verifyJWT(userRecord.token) as JwtPayload;
+            if (Date.now() >= token_decoded.exp! * 1000) {
+                const new_token = jwtServiceInstance.generateJWT(userRecord);
+                userRecord.token = new_token;
+                await userRecord.save();
+
+                return {
+                    email: userRecord.email,
+                    token: new_token,
+                    }
+              }else { //token not expired
+                return {
+                    email: userRecord.email,
+                    token: userRecord.token,
+                    }
+              }
+        }        
     }
 
     public async logout(email: string, password: string): Promise<any> {
-        let isExpired = false;
 
         const userRecord = await UserModel.findOne({ email });
 
@@ -90,12 +101,14 @@ export default class AuthService {
             throw new Error('User not logged in');
         }   
 
-        try {
-            //future check of jwt token
-            const decoded = JSON.stringify(decoder(userRecord.token),null,4);
-        }catch(err){
-            throw new Error("Unable to decode token");
-        }
+        const jwtServiceInstance = new JwtService();
+
+        const token_decoded = jwtServiceInstance.verifyJWT(userRecord.token) as JwtPayload;
+        if (Date.now() >= token_decoded.exp! * 1000) {
+            userRecord.token = "";
+            await userRecord.save();
+            throw new Error("Token Expired! Please login!");
+          }
 
         userRecord.updateOne({ "token":""},(err: Error, res: string) =>{
             console.log("deleted token by user");
@@ -106,25 +119,28 @@ export default class AuthService {
         }
     }
 
-    public async hasGrant(email: string, token: string): Promise<any> {
+    public async hasGrant(token: string): Promise<any> {
         const userRecord = await UserModel.findOne({ token });
 
         if(!userRecord){
             throw new Error("User not logged in. Please log in.");
         }
 
-        try {
-            //future check of jwt token
-            const decoded = JSON.stringify(decoder(userRecord.token),null,4);
-        }catch(err){
-            throw new Error("Unable to decode token");
-        }
+        const jwtServiceInstance = new JwtService();
+
+        const token_decoded = jwtServiceInstance.verifyJWT(token) as JwtPayload;
+        if (Date.now() >= token_decoded.exp! * 1000) {
+            userRecord.token = "";
+            await userRecord.save();
+            throw new Error("Token Expired! Please login!");
+          }
 
         if(userRecord.role != "admin"){
             throw new Error("Unauthorized");
         }
-
+        
         return {
+            email: userRecord.email,
             has_grant: true,
         }
         

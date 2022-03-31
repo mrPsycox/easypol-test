@@ -37,4 +37,4 @@ const UserSchema = new mongoose.Schema({
 
 })
 
-export default mongoose.model<UserInterface & mongoose.Document>('User', UserSchema,'easypol-db')
+export default mongoose.model<UserInterface & mongoose.Document>('User', UserSchema,'users')

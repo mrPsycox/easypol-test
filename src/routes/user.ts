@@ -1,4 +1,3 @@
-import { json } from "body-parser";
 import { Application, Request, Response } from "express"
 import AuthService from "../services/auth";
 
@@ -41,7 +40,7 @@ export default (app: Application) => {
         try{
             const authServiceInstance = new AuthService();
             await authServiceInstance.logout(email,password);
-            
+            return res.status(200).json({ email, "status":"logged_out" }).end();
             
         }catch(err){
             console.log(err);
