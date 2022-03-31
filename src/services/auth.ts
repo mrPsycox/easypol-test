@@ -15,12 +15,12 @@ export default class AuthService {
             const pwdHash = await bcrypt.hash(password.toString(), Number(salt));
     
             const userRecord = await UserModel.create({
-               email,
-               password: pwdHash,
-               salt: salt.toString('hex'),
-               role,
-            });
-    
+                email,
+                password: pwdHash,
+                salt: salt.toString('hex'),
+                role,
+             });
+     
             return {
                 email: userRecord.email,
                 applied_role: userRecord.role,

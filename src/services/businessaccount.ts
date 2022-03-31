@@ -35,36 +35,26 @@ export default class businessaccountService {
         }
     }
 
-    public async createUser(businessaccount: string, new_user: string, new_pwd: string){
+    public async createUser(businessaccount: string, email: string, password: string){
         const businessaccountRecord = await BusinessAccountModel.findOne( { businessaccount });
 
         if(!businessaccountRecord){
             throw new Error("Business account not exists");
         }
 
-        const userRecord =  await UserModel.findOne( { new_user });
+        console.log(email);
+        const userRecord =  await UserModel.findOne( { email });
 
-        if(userRecord){
-            
-            businessaccountRecord.accounts.push(userRecord._id);
-            businessaccountRecord.save();
-            return {
-                username: businessaccountRecord.username,
-                accounts: businessaccountRecord.accounts,
-            }
-        }else{
-            
-            const authServiceInstance = new AuthService();
-            const { email, applied_role } = await authServiceInstance.create(new_user,new_pwd,'collaboratore');
+        console.log(userRecord);
 
-            console.log(email,applied_role);
+        //CONTINUARE QUI
 
-            return {
+
+        return {
                 username: businessaccountRecord.username,
                 accounts: businessaccountRecord.accounts,
             }
 
-        }
-
+        
     }
 }
