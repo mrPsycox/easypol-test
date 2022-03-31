@@ -2,7 +2,7 @@ import * as mongoose from 'mongoose';
 
 interface businessaccountInterface {
     username: string;
-    accounts: string[];
+    accounts: mongoose.Schema.Types.ObjectId[];
     created_by: string;
   }
 
@@ -12,8 +12,9 @@ const businessaccountSchema = new mongoose.Schema({
         required: true,
     },
     accounts: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'}],
         required: true,
     },
     created_by: {
