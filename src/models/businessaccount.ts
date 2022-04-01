@@ -3,7 +3,7 @@ import * as mongoose from 'mongoose';
 interface businessaccountInterface {
     username: string;
     accounts: mongoose.Schema.Types.ObjectId[];
-    created_by: string;
+    date: Date;
   }
 
 const businessaccountSchema = new mongoose.Schema({
@@ -17,9 +17,8 @@ const businessaccountSchema = new mongoose.Schema({
             ref: 'User'}],
         required: true,
     },
-    created_by: {
-        type: String,
-    }
+
+    date: { type: Date, default: Date.now }
 
 });
 

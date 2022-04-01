@@ -1,8 +1,7 @@
 import BusinessAccountModel from "../models/businessaccount";
 import UserModel from "../models/user";
-import AuthService from "./auth";
-
-
+import bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 
 export default class businessaccountService {
@@ -25,36 +24,137 @@ export default class businessaccountService {
         const newbusinessaccount = await BusinessAccountModel.create({
             username,
             undefined,
-            email
         });
 
         return {
             username: newbusinessaccount.username,
             accounts: newbusinessaccount.accounts,
-            created_by: newbusinessaccount.created_by
+            creation_date: newbusinessaccount.date
         }
     }
 
-    public async createUser(businessaccount: string, email: string, password: string){
+    public async createUser(username: string, email: string, password: string){
+        const businessaccountRecord = await BusinessAccountModel.findOne( { username });
+
+        if(!businessaccountRecord){
+            throw new Error("Business account not exists");
+        }
+
+        const userRecord =  await UserModel.findOne( { email });
+
+        if(businessaccountRecord.accounts.includes(userRecord?._id)){
+            throw new Error("User yet exists in business account");
+        }
+
+        if(userRecord){
+
+            businessaccountRecord.accounts.push(userRecord._id);
+            businessaccountRecord.save();
+
+            return {
+                username: businessaccountRecord.username,
+                accounts: businessaccountRecord.accounts,
+            }
+
+        }else{
+
+            const salt = randomBytes(32);
+            const pwdHash = await bcrypt.hash(password.toString(), Number(salt));
+
+            const newUser = await UserModel.create({
+                email,
+                password: pwdHash,
+                salt: salt.toString('hex'),
+                role: 'collaboratore',
+            });
+
+            businessaccountRecord.accounts.push(newUser._id);
+            businessaccountRecord.save();
+
+            return {
+                username: businessaccountRecord.username,
+                accounts: businessaccountRecord.accounts,
+            }
+        }
+        
+    }
+
+    public async deleteUser(businessaccount: string, email: string){
         const businessaccountRecord = await BusinessAccountModel.findOne( { businessaccount });
 
         if(!businessaccountRecord){
             throw new Error("Business account not exists");
         }
 
-        console.log(email);
         const userRecord =  await UserModel.findOne( { email });
 
-        console.log(userRecord);
+        if(!userRecord){
+            throw new Error("User not exists!");
+        }
 
-        //CONTINUARE QUI
+        const index = businessaccountRecord.accounts.indexOf(userRecord._id);
+        if(index !== -1){
+            businessaccountRecord.accounts.splice(index, 1);
+            businessaccountRecord.save();
+        }
+        
 
+        await UserModel.deleteOne({ email });
 
         return {
-                username: businessaccountRecord.username,
-                accounts: businessaccountRecord.accounts,
-            }
+            username: businessaccountRecord.username,
+            accounts: businessaccountRecord.accounts,
+        }
 
+    }
+
+    public async updateUser(businessaccount: string, email: string, password: string){
+        const businessaccountRecord = await BusinessAccountModel.findOne( { businessaccount });
+
+        if(!businessaccountRecord){
+            throw new Error("Business account not exists");
+        }
+
+        const userRecord =  await UserModel.findOne( { email });
+
+        if(!userRecord){
+            throw new Error("User not exists!");
+        }
+
+        if(businessaccountRecord.accounts.includes(userRecord?._id)){
+
+            const salt = randomBytes(32);
+            const newPwdHash = await bcrypt.hash(password.toString(), Number(salt));
+
+            userRecord.password = newPwdHash;
+            userRecord.save();
+
+        }else{
+            throw new Error("User not attached to Business account");
+        }
+ 
+
+        return {
+            username: businessaccountRecord.username,
+            accounts: businessaccountRecord.accounts,
+        }
+
+    }
+
+    public async getUsers(username: string){
+
+        const businessaccountRecord = await BusinessAccountModel.findOne( { username });
+
+        if(!businessaccountRecord){
+            throw new Error("Business account not exists");
+        }
+
+        const matched_users = await UserModel.find().where('_id').in(businessaccountRecord.accounts).exec();
         
+        const users = matched_users.map(a => a.email);
+
+        return {
+            users,
+        }
     }
 }
