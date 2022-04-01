@@ -11,6 +11,11 @@ export default class AuthService {
    public async create(email: String, password: String, role: String): Promise<any> {
         try{
 
+            const checkUserRecord = await UserModel.findOne({ email });
+            if(checkUserRecord){
+                throw new Error("Users yet exists");
+            }
+
             const salt = randomBytes(32);
             const pwdHash = await bcrypt.hash(password.toString(), Number(salt));
     
