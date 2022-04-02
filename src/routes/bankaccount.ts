@@ -26,6 +26,7 @@ export default (app:Application) => {
     
     app.get('/bankaccount/list', async(req: Request, res: Response) => {
         const token = req.body.token;
+        const company = req.body.company
 
         try {
 
@@ -35,10 +36,10 @@ export default (app:Application) => {
             if( has_grant == true){ //qua get di tutti i conti correnti
 
                 const bankAccountServiceInstance = new bankAccountService();
-                const { toReturn } = await bankAccountServiceInstance.listBankAccounts(has_grant);
+                const { stuff } = await bankAccountServiceInstance.listBankAccounts(has_grant,company);
 
-                const bankaccounts = toReturn.bankaccounts;
-                return res.json({ bankaccounts }).status(200).end();
+                //const bankaccounts = toReturn.bankaccounts;
+                return res.json({ stuff  }).status(200).end();
 
             }else{ //qua get di conti correnti pubblici (contoB contoC)
 
