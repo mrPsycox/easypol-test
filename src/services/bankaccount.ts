@@ -1,5 +1,4 @@
 import BankAccountModel from "../models/bankaccount";
-import BankAccountInterface from '../models/bankaccount'
 
 export default class BankAccountService {
     constructor(){}
@@ -25,8 +24,19 @@ export default class BankAccountService {
             return x.transactions.balance;
         }
     }
+    private getTotalIncomeAggregate(obj: Object){
+        for(let x of Object.values(obj)){
+            return x.totalincome;
+        }
+    }
 
-    private listResponseObject(name: String,created_at: Date,balance: Number,total_income: Number, total_outgo: Number){
+    private getTotalOutgoAggregate(obj: Object){
+        for(let x of Object.values(obj)){
+            return x.totalincome;
+        }
+    }
+
+    private listResponseObject(name: String[],created_at: Date[],balance: Number,total_income: Number, total_outgo: Number){
         return {
             name: name,
             bankaccount_creation: created_at,
@@ -74,7 +84,10 @@ export default class BankAccountService {
                 }                
                 
                 const bankAccountNames = this.getNamesfromFind(bankaccountsInstance) as String[];
-                const bankAccountCreations = this.getCreationsfromFind(bankaccountsInstance) as String[];
+                const bankAccountCreations = this.getCreationsfromFind(bankaccountsInstance) as Date[];
+
+                let retAggregate = undefined;
+                let retSingle = undefined;
                 
                 if(bankAccountNames.length > 1 && bankAccountCreations.length > 1){
 
@@ -86,20 +99,31 @@ export default class BankAccountService {
 
                     const balance_aggregate = balance_pvt+balance_pub;
 
-                    const total_incomepvt_object = await BankAccountModel.aggregate().match({type:'private', owner: company}).unwind('transactions').group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'}});
+
+                    const incomepvtobj = await BankAccountModel.aggregate().match({type:'private', owner: company}).unwind('transactions').group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'}});
+                    const outgopvtobj =  await BankAccountModel.aggregate().match({ type: 'public', owner: company}).unwind('transactions').group({ '_id':'_id', 'totaloutgo':{ '$sum':'$transactions.outgo'}});
+
+                    const totalincome_pvt = this.getTotalIncomeAggregate(incomepvtobj);
+                    const totaloutgo_pvt = this.getTotalOutgoAggregate(outgopvtobj);
+
+                    retAggregate = this.listResponseObject(bankAccountNames,bankAccountCreations,balance_aggregate,totalincome_pvt,totaloutgo_pvt);
+
+                }else if(bankAccountNames.length == 1 && bankAccountCreations.length == 1){
+
+                    const lastbalance = await (await BankAccountModel.aggregate().match({ owner: company}).unwind('transactions')).slice(-1);
+                    const balance = this.getBalancefromAggregate(lastbalance);
+                    const incomeobj = await BankAccountModel.aggregate().match({type:'private', owner: company}).unwind('transactions').group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'}});
+                    const outgoobj =  await BankAccountModel.aggregate().match({ type: 'public', owner: company}).unwind('transactions').group({ '_id':'_id', 'totaloutgo':{ '$sum':'$transactions.outgo'}});
+
+                    const totalincome = this.getTotalIncomeAggregate(incomeobj);
+                    const totaloutgo = this.getTotalOutgoAggregate(outgoobj);
+
                     
-                    console.log(total_incomepvt_object)
-                    
+                    retSingle = this.listResponseObject(bankAccountNames,bankAccountCreations,balance,totalincome,totaloutgo);
                 }
 
-                /*
-                const company_pvt = await (await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions')).slice(-1);
-                const company_pub = await (await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions')).slice(-1);
-                */
-                
-                return {
-                    stuff: true,
-                }
+                console.log(retAggregate,retSingle)
+                return [retAggregate,retSingle];
 
             }else{ //utenza di tipo collaboratore
 
