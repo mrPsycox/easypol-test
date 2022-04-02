@@ -5,8 +5,10 @@ import AuthService from "../services/auth";
 export default (app: Application) => {
 
     app.post('/user/create', async (req: Request, res: Response) => {
+        const { email, password, role } = req.body;
+        
         try {
-            const { email, password, role } = req.body;
+            
             const authServiceInstance = new AuthService();
             const { applied_role } = await authServiceInstance.create(email,password,role);
             

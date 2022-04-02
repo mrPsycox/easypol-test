@@ -1,15 +1,21 @@
-import jwt, {  JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+require('dotenv').config();
+
+let secret_key = process.env.SECRET_KEY as string;
+
 
 export default class JwtService {
     constructor(){};
 
     public generateJWT(user: any){
+
+
         return jwt.sign({
             data: {
                 _id: user._id,
                 email: user.email,
             }
-        }, 'MySuP3R_z3kr3t.', { expiresIn: '6h' });
+        }, secret_key, { expiresIn: '6h' });
     }
     
     public verifyJWT(token: string){

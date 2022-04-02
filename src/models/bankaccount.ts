@@ -1,14 +1,22 @@
 import * as mongoose from 'mongoose';
 
 
-interface bankAccountInterface {
+interface bankAccountInterface extends mongoose.Document {
     name: string,
     date: Date,
     owner: string,
+    type: string,
     balance: Number,
     total_income: Number,
     total_outgo: Number,
     transactions: [mongoose.Schema.Types.ObjectId] 
+}
+
+interface transactionInterface extends mongoose.Document {
+    date: Date,
+    balance: Number,
+    income: Number,
+    outgo: Number,
 }
 
 const transactionSchema = new mongoose.Schema({
@@ -39,6 +47,7 @@ const bankAccountSchema = new mongoose.Schema({
     },
     date: { type: Date, default: Date.now },
     owner: { type: String, required: true },
+    type: {type: String, required: true},
     balance: {
         type: Number,
     },
@@ -54,5 +63,5 @@ const bankAccountSchema = new mongoose.Schema({
 
 });
 
-export default mongoose.model<bankAccountInterface & mongoose.Document>('bankaccount',bankAccountSchema,'bankaccounts');
+export default mongoose.model<bankAccountInterface & transactionInterface & mongoose.Document>('bankaccount',bankAccountSchema,'bankaccounts');
 

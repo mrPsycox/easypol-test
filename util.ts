@@ -2,17 +2,21 @@ import mongoose, { ConnectOptions } from "mongoose";
 import bankaccountModel from "./src/models/bankaccount";
 
 
+require('dotenv').config();
+
+let mongouri = process.env.MONGO_URI as string;
+
 const mongoOpts = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 } as ConnectOptions;
 
-mongoose.connect("mongodb://admin:root@127.0.0.1:27017/my_db?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false",mongoOpts,(err) => {
+mongoose.connect(mongouri,mongoOpts,(err) => {
     if(err) console.log(err);
     else console.log("mongodb connected");
 });
 
-const csvFilePath='/home/mrpsycox/workdir_git/contoC.csv';
+const csvFilePath='/home/mrpsycox/workdir_git/contoA.csv';
 const csv =  require('csvtojson');
 
 csv()
@@ -21,7 +25,7 @@ csv()
     console.log(jsonObj);
 
     
-    const target = bankaccountModel.findOne({ "name":"contoC"});
+    const target = bankaccountModel.findOne({ "name":"contoA"});
     target.updateOne({
         $set: {
             "transactions": jsonObj,
