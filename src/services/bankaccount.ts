@@ -26,9 +26,81 @@ export default class BankAccountService {
     }
     private getCreationDate(obj:Object){
         for(let x of Object.values(obj)){
-            return x._id;
+            return x.date;
         }
     }
+
+
+    private async getAggregatePublic(obj:Object){
+        let balance_aggr = 0;
+        let total_income_aggr = 0;
+        let total_outgo_aggr = 0;
+        for(let pub of Object.values(obj)){
+ 
+            balance_aggr += pub.balance;
+            total_income_aggr += pub.totalincome;
+            total_outgo_aggr += pub.totaloutgo;;
+
+            const aggregate_response = this.listResponseObject("aggregate",balance_aggr,total_income_aggr,total_outgo_aggr)
+            
+            return aggregate_response;
+        }
+    
+    }
+
+    private async getAggregatePrivate(obj:Object){
+        let balance_aggr = 0;
+        let total_income_aggr = 0;
+        let total_outgo_aggr = 0;
+
+        for(let pvt of Object.values(obj)){
+            balance_aggr += pvt.balance;
+            total_income_aggr += pvt.totalincome;
+            total_outgo_aggr += pvt.totaloutgo;
+
+            console.log(total_income_aggr,total_outgo_aggr)
+
+            const aggregate_response = this.listResponseObject("aggregate",balance_aggr,total_income_aggr,total_outgo_aggr)
+            return aggregate_response;
+            }
+        }
+
+    private async getBankPublic(obj: Object){
+            const name_pub = await this.getNamefromAggregate(obj);
+
+            const creationdate_pub = await this.getCreationDate(obj);
+    
+            const balance_pub = await this.getBalancefromAggregate(obj);
+    
+            const totalincome_pub = await this.getTotalIncomeAggregate(obj)
+    
+            const totaloutgo_pub = await this.getTotalOutgoAggregate(obj);
+    
+            const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
+
+
+            return pub_response;
+        
+
+    }
+
+    private async getBankPrivate(obj: Object){
+        const name_pvt= await this.getNamefromAggregate(obj);
+
+        const creationdate_pvt = await this.getCreationDate(obj);
+
+        const balance_pvt = await this.getBalancefromAggregate(obj);
+
+        const totalincome_pvt = await this.getTotalIncomeAggregate(obj)
+
+        const totaloutgo_pvt = await this.getTotalOutgoAggregate(obj);
+
+        const pvt_response = this.listResponseObject(name_pvt, balance_pvt, totalincome_pvt, totaloutgo_pvt, creationdate_pvt );
+
+        return pvt_response;
+    
+
+}
 
     private listResponseObject(name: String,balance: Number,total_income: Number, total_outgo: Number,created_at?: Date){
         return {
@@ -39,90 +111,6 @@ export default class BankAccountService {
             total_outgo: total_outgo
         }
     }
-
-
-    private async getPrivateBalance(company: String){
-        const lastbalance_pvt = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id': '$name', balance: { $last: '$transactions.balance'} });
-
-        const balance_pvt = this.getBalancefromAggregate(lastbalance_pvt);
-
-        return balance_pvt;
-    }
-
-    private async getPublicBalance(company: String){
-        const lastbalance_pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', balance: { $last: '$transactions.balance'} });
-
-        const balance_pub = this.getBalancefromAggregate(lastbalance_pub);
-
-        return balance_pub;
-
-    }
-
-    private async getNamePublic(company: String){
-        const lastbalance_pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', balance: { $last: '$transactions.balance'} });
-
-        const name_pub = this.getNamefromAggregate(lastbalance_pub);
-
-        return name_pub;
-
-    }
-    private async getNamePrivate(company: String){
-        const lastbalance_pvt = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', balance: { $last: '$transactions.balance'} });
-
-        const name_pvt = this.getNamefromAggregate(lastbalance_pvt);
-
-        return name_pvt;
-
-    }
-
-    private async getTotalIncomePrivate(company: String){
-        const incomepvtobj = await BankAccountModel.aggregate().match({type:'private', owner: company}).unwind('transactions').group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'}});
-
-        const totalincome_pvt = this.getTotalIncomeAggregate(incomepvtobj);
-
-        return totalincome_pvt;
-    }
-
-    private async getTotalIncomePublic(company: String){
-        const incomepubobj = await BankAccountModel.aggregate().match({type:'public', owner: company}).unwind('transactions').group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'}});
-
-        const totalincome_pub = this.getTotalIncomeAggregate(incomepubobj);
-
-        return totalincome_pub;
-    }
-
-    private async getTotalOutgoPrivate(company: String){
-        const outgopvtobj =  await BankAccountModel.aggregate().match({ type: 'private', owner: company}).unwind('transactions').group({ '_id':'_id', 'totaloutgo':{ '$sum':'$transactions.outgo'}});
-
-        const totaloutgo_pvt = this.getTotalOutgoAggregate(outgopvtobj);
-
-        return totaloutgo_pvt;
-    }
-
-    private async getTotalOutgoPublic(company: String){
-        const outgopubobj =  await BankAccountModel.aggregate().match({ type: 'public', owner: company}).unwind('transactions').group({ '_id':'_id', 'totaloutgo':{ '$sum':'$transactions.outgo'}});
-
-        const totaloutgo_pub = this.getTotalOutgoAggregate(outgopubobj);
-
-        return totaloutgo_pub;
-    }
-
-    private async getCreationDatePublic(company: String){
-        const creationdate_pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$date' });
-
-        const creatdate = this.getCreationDate(creationdate_pub);
-
-        return creatdate;
-    }
-
-    private async getCreationDatePrivate(company: String){
-        const creationdate_pvt = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$date' });
-
-        const creatdate = this.getCreationDate(creationdate_pvt);
-
-        return creatdate;
-    }
-
 
     public async create(name: String, owner: String, type: String): Promise<any> {
         try{
@@ -164,35 +152,42 @@ export default class BankAccountService {
                 
                 if(size > 1){
 
-                    const prova = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                    const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                    const created_at_obj_pub = await BankAccountModel.find({ owner: company, type: 'public' });
 
-                    console.log(prova);
+                    const pvt = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                    const created_at_obj_pvt = await BankAccountModel.find({ owner: company, type: 'private' });
 
-                    const name_pvt = await this.getNamePrivate(company);
-                    const name_pub = await this.getNamePublic(company);
-
-                    const creationdate_pub = await this.getCreationDatePublic(company);
-                    const creationdate_pvt = await this.getCreationDatePrivate(company);
-
-
-                    const balance_pvt = await this.getPrivateBalance(company);
-                    const balance_pub = await this.getPublicBalance(company);
+                    const created_at_pub = await this.getCreationDate(created_at_obj_pub);
+                    const pub_response = await this.getBankPublic(pub);
+                                        
+                    pub_response.bankaccount_creation = created_at_pub;
                     
-                    const balance_aggr = balance_pub + balance_pvt
+                    const pvt_response = await this.getBankPrivate(pvt);
+                    const created_at_pvt = await this.getCreationDate(created_at_obj_pvt);
 
-                    const totalincome_pvt = await this.getTotalIncomePrivate(company);
-                    const totaloutgo_pvt = await this.getTotalOutgoPrivate(company);
+                    pvt_response.bankaccount_creation = created_at_pvt;
 
-                    const totalincome_pub = await this.getTotalIncomePublic(company);
-                    const totaloutgo_pub = await this.getTotalOutgoPublic(company);
+                    const aggregate_response_pub = await this.getAggregatePublic(pub);
+                    const aggregate_response_pvt = await this.getAggregatePrivate(pvt);
 
-                    const totalincome_aggr = totalincome_pub + totalincome_pvt;
-                    
-                    const totaloutgo_aggr = totaloutgo_pub + totaloutgo_pvt;
+                    const aggr_pub_balance: number = aggregate_response_pub?.balance as number;
+                    const aggr_pvt_balance: number = aggregate_response_pvt?.balance as number;
 
-                    const aggregate_response = this.listResponseObject("aggregate",balance_aggr,totalincome_aggr,totaloutgo_aggr);
-                    const pvt_response = this.listResponseObject(name_pvt,balance_pvt,totalincome_pvt,totaloutgo_pvt,creationdate_pvt);
-                    const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
+                    const balance_aggr = aggr_pub_balance + aggr_pvt_balance;
+
+                    const aggr_pub_income: number = aggregate_response_pub?.total_income as number;
+                    const aggr_pvt_income: number = aggregate_response_pvt?.total_income as number;
+
+                    const income_aggr = aggr_pub_income + aggr_pvt_income;
+
+                    const aggr_pub_outgo: number = aggregate_response_pub?.total_outgo as number;
+                    const aggr_pvt_outgo: number = aggregate_response_pvt?.total_outgo as number;
+
+                    const outgo_aggr = aggr_pub_outgo + aggr_pvt_outgo;
+
+                    const aggregate_response = this.listResponseObject("aggregate",balance_aggr,income_aggr,outgo_aggr);
+
 
                     return {
                         aggregate_response: aggregate_response,
@@ -202,44 +197,31 @@ export default class BankAccountService {
 
                 }else if(size == 1){
 
-                    const bankaccountsInstance_pub = await BankAccountModel.find({ owner: company, type: 'public' });
-                    const bankaccountsInstance_pvt = await BankAccountModel.find({ owner: company, type: 'public' });
+                    const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                    const pvt = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
 
-                    if(bankaccountsInstance_pub){
+                    if(pub){
 
-                        const name_pub = await this.getNamePublic(company);
+                        const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                        const created_at_obj = await BankAccountModel.find({ owner: company, type: 'public' });
 
-                        const creationdate_pub = await this.getCreationDatePublic(company);
-
-                        const balance_pub = await this.getPublicBalance(company);
-
-                        const totalincome_pub = await this.getTotalIncomePublic(company);
-
-                        const totaloutgo_pub = await this.getTotalOutgoPublic(company);
-
-                        const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
-
+                        const created_at = await this.getCreationDate(created_at_obj);
+                        const pub_response = await this.getBankPublic(pub);
+        
+                        pub_response.bankaccount_creation = created_at;
+                        
                         return {
                             pub_response: pub_response,
                         }
 
-                    }else if(bankaccountsInstance_pvt){
+                    }else if(pvt){
 
-                        const prova = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                        const pvt = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                        const created_at_obj = await BankAccountModel.find({ owner: company, type: 'private' });
 
-                        console.log(prova);
-
-                        const name_pvt = await this.getNamePrivate(company);
-
-                        const balance_pvt = await this.getPrivateBalance(company);
-
-                        const creationdate_pvt = await this.getCreationDatePrivate(company);
-
-                        const totalincome_pvt = await this.getTotalIncomePrivate(company);
-
-                        const totaloutgo_pvt = await this.getTotalOutgoPrivate(company);
-
-                        const pvt_response = this.listResponseObject(name_pvt,balance_pvt,totalincome_pvt,totaloutgo_pvt,creationdate_pvt);
+                        const pvt_response = await this.getBankPrivate(pvt);
+                        const created_at = await this.getCreationDate(created_at_obj);
+                        pvt_response.bankaccount_creation = created_at;
 
                         return {
                             pvt_response: pvt_response,
@@ -248,33 +230,20 @@ export default class BankAccountService {
                 }
 
             }else{ //utenza di tipo collaboratore
-                const bankaccountsInstance = await BankAccountModel.find({ owner: company });
 
-                if(!bankaccountsInstance){
+                const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                const created_at_obj_pub = await BankAccountModel.find({ owner: company, type: 'public' });
+
+                if(!pub){
                     throw new Error("No Bank Account in Database!");
                 }
 
+                const created_at = await this.getCreationDate(created_at_obj_pub);
+                const aggregate_response = await this.getAggregatePublic(pub);
+                const pub_response = await this.getBankPublic(pub);
 
+                pub_response.bankaccount_creation = created_at;
                 
-                const aggr_pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
-                
-                const aggr_balance = await this.getBalancefromAggregate(aggr_pub);
-                const aggr_income = await this.getTotalIncomeAggregate(aggr_pub);
-                const aggr_outgo = await this.getTotalOutgoAggregate(aggr_pub);
-
-
-                const name_pub = await this.getNamePublic(company);
-
-                const creationdate_pub = await this.getCreationDatePublic(company);
-
-                const balance_pub = await this.getPublicBalance(company);
-
-                const totalincome_pub = await this.getTotalIncomePublic(company);
-
-                const totaloutgo_pub = await this.getTotalOutgoPublic(company);
-
-                const aggregate_response = this.listResponseObject("aggregate",aggr_balance,aggr_income,aggr_outgo)
-                const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
 
                 return {
                     aggregate_response: aggregate_response,
