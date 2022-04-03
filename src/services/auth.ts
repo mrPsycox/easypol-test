@@ -139,14 +139,16 @@ export default class AuthService {
             await userRecord.save();
             throw new Error("Token Expired! Please login!");
           }
-
+        
+        let has_grant = true;
+        
         if(userRecord.role != "admin"){
-            throw new Error("Unauthorized");
+            has_grant = false;
         }
         
         return {
             email: userRecord.email,
-            has_grant: true,
+            has_grant: has_grant,
         }
         
         

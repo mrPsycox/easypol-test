@@ -36,13 +36,16 @@ export default (app:Application) => {
             if( has_grant == true){ //qua get di tutti i conti correnti
 
                 const bankAccountServiceInstance = new bankAccountService();
-                const { retAggregate } = await bankAccountServiceInstance.listBankAccounts(has_grant,company);
-                
-                
-                return res.json({ retAggregate  }).status(200).end();
+                const { aggregate_response,pvt_response,pub_response } = await bankAccountServiceInstance.listBankAccounts(has_grant,company);
+                                
+                return res.json({ aggregate_response,pvt_response,pub_response  }).status(200).end();
 
             }else{ //qua get di conti correnti pubblici (contoB contoC)
 
+                const bankAccountServiceInstance = new bankAccountService();
+                const { aggregate_response, pub_response } = await bankAccountServiceInstance.listBankAccounts(has_grant,company);
+                
+                return res.json({ aggregate_response, pub_response  }).status(200).end();
             }
 
 

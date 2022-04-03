@@ -21,16 +21,16 @@ export default class BankAccountService {
 
     private getTotalOutgoAggregate(obj: Object){
         for(let x of Object.values(obj)){
-            return x.totalincome;
+            return x.totaloutgo;
         }
     }
     private getCreationDate(obj:Object){
         for(let x of Object.values(obj)){
-            return x.date;
+            return x._id;
         }
     }
 
-    private listResponseObject(name: String,created_at: Date,balance: Number,total_income: Number, total_outgo: Number){
+    private listResponseObject(name: String,balance: Number,total_income: Number, total_outgo: Number,created_at?: Date){
         return {
             name: name,
             bankaccount_creation: created_at,
@@ -162,17 +162,18 @@ export default class BankAccountService {
                 
                 let size = Object.keys(bankaccountsInstance).length
                 
-
-                let retAggregate = undefined;
-                let retSingle = undefined;
-                
                 if(size > 1){
 
+                    const prova = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+
+                    console.log(prova);
+
                     const name_pvt = await this.getNamePrivate(company);
-                    const name_pub = await this.getNamePublic(company)
+                    const name_pub = await this.getNamePublic(company);
 
                     const creationdate_pub = await this.getCreationDatePublic(company);
                     const creationdate_pvt = await this.getCreationDatePrivate(company);
+
 
                     const balance_pvt = await this.getPrivateBalance(company);
                     const balance_pub = await this.getPublicBalance(company);
@@ -189,29 +190,96 @@ export default class BankAccountService {
                     
                     const totaloutgo_aggr = totaloutgo_pub + totaloutgo_pvt;
 
-                    const aggregate_response = this.listResponseObject(company+"aggregate",creationdate_pvt,balance_aggr,totalincome_aggr,totaloutgo_aggr);
+                    const aggregate_response = this.listResponseObject("aggregate",balance_aggr,totalincome_aggr,totaloutgo_aggr);
+                    const pvt_response = this.listResponseObject(name_pvt,balance_pvt,totalincome_pvt,totaloutgo_pvt,creationdate_pvt);
+                    const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
 
-                    console.log(aggregate_response);
-
-
+                    return {
+                        aggregate_response: aggregate_response,
+                        pvt_response: pvt_response,
+                        pub_response: pub_response,
+                    }
 
                 }else if(size == 1){
 
-                    const lastbalance = await (await BankAccountModel.aggregate().match({ owner: company}).unwind('transactions')).slice(-1);
-                    const balance = this.getBalancefromAggregate(lastbalance);
-                    const incomeobj = await BankAccountModel.aggregate().match({type:'private', owner: company}).unwind('transactions').group({ '_id':'_id', 'totalincome':{ '$sum':'$transactions.income'}});
-                    const outgoobj =  await BankAccountModel.aggregate().match({ type: 'public', owner: company}).unwind('transactions').group({ '_id':'_id', 'totaloutgo':{ '$sum':'$transactions.outgo'}});
+                    const bankaccountsInstance_pub = await BankAccountModel.find({ owner: company, type: 'public' });
+                    const bankaccountsInstance_pvt = await BankAccountModel.find({ owner: company, type: 'public' });
 
-                    const totalincome = this.getTotalIncomeAggregate(incomeobj);
-                    const totaloutgo = this.getTotalOutgoAggregate(outgoobj);
+                    if(bankaccountsInstance_pub){
 
-                    
-                    //retSingle = this.listResponseObject(bankAccountNames,bankAccountCreations,balance,totalincome,totaloutgo);
+                        const name_pub = await this.getNamePublic(company);
+
+                        const creationdate_pub = await this.getCreationDatePublic(company);
+
+                        const balance_pub = await this.getPublicBalance(company);
+
+                        const totalincome_pub = await this.getTotalIncomePublic(company);
+
+                        const totaloutgo_pub = await this.getTotalOutgoPublic(company);
+
+                        const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
+
+                        return {
+                            pub_response: pub_response,
+                        }
+
+                    }else if(bankaccountsInstance_pvt){
+
+                        const prova = await BankAccountModel.aggregate().match({type:'private' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+
+                        console.log(prova);
+
+                        const name_pvt = await this.getNamePrivate(company);
+
+                        const balance_pvt = await this.getPrivateBalance(company);
+
+                        const creationdate_pvt = await this.getCreationDatePrivate(company);
+
+                        const totalincome_pvt = await this.getTotalIncomePrivate(company);
+
+                        const totaloutgo_pvt = await this.getTotalOutgoPrivate(company);
+
+                        const pvt_response = this.listResponseObject(name_pvt,balance_pvt,totalincome_pvt,totaloutgo_pvt,creationdate_pvt);
+
+                        return {
+                            pvt_response: pvt_response,
+                        }
+                    }
                 }
 
-                return true;
-
             }else{ //utenza di tipo collaboratore
+                const bankaccountsInstance = await BankAccountModel.find({ owner: company });
+
+                if(!bankaccountsInstance){
+                    throw new Error("No Bank Account in Database!");
+                }
+
+
+                
+                const aggr_pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
+                
+                const aggr_balance = await this.getBalancefromAggregate(aggr_pub);
+                const aggr_income = await this.getTotalIncomeAggregate(aggr_pub);
+                const aggr_outgo = await this.getTotalOutgoAggregate(aggr_pub);
+
+
+                const name_pub = await this.getNamePublic(company);
+
+                const creationdate_pub = await this.getCreationDatePublic(company);
+
+                const balance_pub = await this.getPublicBalance(company);
+
+                const totalincome_pub = await this.getTotalIncomePublic(company);
+
+                const totaloutgo_pub = await this.getTotalOutgoPublic(company);
+
+                const aggregate_response = this.listResponseObject("aggregate",aggr_balance,aggr_income,aggr_outgo)
+                const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
+
+                return {
+                    aggregate_response: aggregate_response,
+                    pub_response: pub_response,
+                }
 
             }
 
@@ -219,4 +287,13 @@ export default class BankAccountService {
             throw new Error(err.message);
         }
     }
+
+    public async listTransactionsMonthbyMonth(isAdmin: boolean, company: String): Promise<any> {
+
+    }
+
+    public async listTransactionsonInterval(isAdmin: boolean, company: String): Promise<any> {
+        
+    }
 }
+
