@@ -13,9 +13,9 @@ services:
     container_name : mongo-database
     command: mongod --auth
     environment:
-      - MONGO_INITDB_DATABASE=my_db
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=${DATABASE}
+      - MONGO_INITDB_ROOT_USERNAME=${DB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_PASSWORD}
     ports:
       - '27017-27019:27017-27019'
     volumes: 
