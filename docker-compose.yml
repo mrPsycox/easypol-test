@@ -1,0 +1,27 @@
+version: '3.7'
+services:
+  easypol:
+    image: easypol
+    build: .
+    container_name: easypol
+    ports: 
+      - 3000:3000
+    depends_on: 
+      - database
+  database:
+    image: mongo:latest
+    container_name : mongo-database
+    command: mongod --auth
+    environment:
+      - MONGO_INITDB_DATABASE=my_db
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    ports:
+      - '27017-27019:27017-27019'
+    volumes: 
+      - mongodbdata:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      
+volumes:
+  mongodbdata:
+    driver: local
