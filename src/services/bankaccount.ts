@@ -30,7 +30,6 @@ export default class BankAccountService {
         }
     }
 
-
     private async getAggregatePublic(obj:Object){
         let balance_aggr = 0;
         let total_income_aggr = 0;

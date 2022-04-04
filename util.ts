@@ -1,10 +1,10 @@
 import mongoose, { ConnectOptions } from "mongoose";
-import bankaccountModel from "./src/models/bankaccount";
+import bankaccountModel from './src/models/bankaccount';
 
 
 require('dotenv').config();
 
-let mongouri = process.env.MONGO_URI as string;
+let mongouri = 'mongodb://admin:root@mongo-database:27017/my_db?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false'
 
 const mongoOpts = {
     useNewUrlParser: true,
@@ -37,10 +37,5 @@ csv()
 
     console.log('fine import')
     });
-    /**
-     * [
-     * 	{a:"1", b:"2", c:"3"},
-     * 	{a:"4", b:"5". c:"6"}
-     * ]
-     */ 
+ 
 

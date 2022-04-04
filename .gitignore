@@ -1,2 +1,6 @@
+Dockerfile
+docker-compose.yml
+mongo-init.js
+dist/
 node_modules
 .env
