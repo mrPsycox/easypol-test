@@ -1,5 +1,5 @@
 import mongoose, { ConnectOptions } from "mongoose";
-import bankaccountModel from './src/models/bankaccount';
+import bankaccountModel from '../models/bankaccount'
 
 
 require('dotenv').config();
@@ -38,4 +38,3 @@ csv()
     console.log('fine import')
     });
  
-

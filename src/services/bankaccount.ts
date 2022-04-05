@@ -1,3 +1,4 @@
+import { FilterQuery } from 'mongoose';
 import BankAccountModel from "../models/bankaccount";
 
 export default class BankAccountService {
@@ -56,8 +57,6 @@ export default class BankAccountService {
             balance_aggr += pvt.balance;
             total_income_aggr += pvt.totalincome;
             total_outgo_aggr += pvt.totaloutgo;
-
-            console.log(total_income_aggr,total_outgo_aggr)
 
             const aggregate_response = this.listResponseObject("aggregate",balance_aggr,total_income_aggr,total_outgo_aggr)
             return aggregate_response;
@@ -151,6 +150,7 @@ export default class BankAccountService {
                 
                 if(size > 1){
 
+
                     const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
                     const created_at_obj_pub = await BankAccountModel.find({ owner: company, type: 'public' });
 
@@ -228,7 +228,7 @@ export default class BankAccountService {
                     }
                 }
 
-            }else{ //utenza di tipo collaboratore
+            }else{ 
 
                 const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id':'$name', 'totalincome':{ '$sum':'$transactions.income'},'totaloutgo':{ '$sum':'$transactions.outgo'},'balance': { $last: '$transactions.balance'}});
                 const created_at_obj_pub = await BankAccountModel.find({ owner: company, type: 'public' });
@@ -257,7 +257,47 @@ export default class BankAccountService {
     }
 
     public async listTransactionsMonthbyMonth(isAdmin: boolean, company: String): Promise<any> {
+        try {
 
+            if(isAdmin){ 
+                
+                const bankaccountsInstance = await BankAccountModel.find({ owner: company });
+                if(!bankaccountsInstance){
+                    throw new Error("No Bank Account in Database!");
+                }                
+                
+                let size = Object.keys(bankaccountsInstance).length
+
+
+                if(size > 1)
+                {
+                    console.log("SONO IN IF")
+
+                    const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id': { month: {$month: '$date'}, count: {$sum: 1}}});
+                    console.log(pub);   
+                    console.log("sono su");
+
+
+
+                }else if(size == 1){
+                    console.log("SONO IN ELSE IF")
+
+                    const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'asc'}).group({ '_id': { month: {$month: '$date'}}, "total": {$sum:"$transactions.income"}});
+                    console.log(pub);
+
+                }
+
+            }else{
+                console.log("SONO IN ELSE")
+
+            console.log("sono qui");
+
+
+            }
+
+        }catch(err){
+
+        }
     }
 
     public async listTransactionsonInterval(isAdmin: boolean, company: String): Promise<any> {
