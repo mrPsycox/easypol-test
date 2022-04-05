@@ -45,7 +45,6 @@ export default class BankAccountService {
             
             return aggregate_response;
         }
-    
     }
 
     private async getAggregatePrivate(obj:Object){
@@ -76,10 +75,7 @@ export default class BankAccountService {
     
             const pub_response = this.listResponseObject(name_pub, balance_pub, totalincome_pub, totaloutgo_pub, creationdate_pub );
 
-
             return pub_response;
-        
-
     }
 
     private async getBankPrivate(obj: Object){
@@ -96,8 +92,6 @@ export default class BankAccountService {
         const pvt_response = this.listResponseObject(name_pvt, balance_pvt, totalincome_pvt, totaloutgo_pvt, creationdate_pvt );
 
         return pvt_response;
-    
-
 }
 
     private listResponseObject(name: String,balance: Number,total_income: Number, total_outgo: Number,created_at?: Date){
@@ -133,6 +127,7 @@ export default class BankAccountService {
             throw new Error(err.message);
         }
     }
+
     public async listBankAccounts(isAdmin: boolean,company: String): Promise<any> {
 
         try {
@@ -268,31 +263,18 @@ export default class BankAccountService {
                 
                 let size = Object.keys(bankaccountsInstance).length
 
-
                 if(size > 1)
                 {
-                    console.log("SONO IN IF")
-
                     const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'desc'}).group({ '_id': { month: {$month: '$date'}, count: {$sum: 1}}});
                     console.log(pub);   
-                    console.log("sono su");
-
-
 
                 }else if(size == 1){
-                    console.log("SONO IN ELSE IF")
 
                     const pub = await BankAccountModel.aggregate().match({type:'public' , owner: company}).unwind('transactions').sort({'date':'asc'}).group({ '_id': { month: {$month: '$date'}}, "total": {$sum:"$transactions.income"}});
                     console.log(pub);
-
                 }
 
             }else{
-                console.log("SONO IN ELSE")
-
-            console.log("sono qui");
-
-
             }
 
         }catch(err){
